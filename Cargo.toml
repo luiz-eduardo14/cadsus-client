@@ -1,0 +1,28 @@
+[package]
+name = "cadsus-client"
+version = "0.0.1"
+edition = "2021"
+authors = ["luiz-eduardo14"]
+repository = "https://github.com/luiz-eduardo14/cadsus-client"
+keywords = ["cadsus"]
+license = "MIT"
+readme = "README.md"
+description = "Wrapper for execute requests in cadsus"
+
+[lib]
+name = "cadsus_client"
+path = "src/lib.rs"
+
+[dependencies]
+hex = "0.4.3"
+rust-crypto = {version = "0.2.36"}
+pkcs8 = {version = "0.10.2", features = ["pem", "std"]}
+http = "1"
+tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
+pkcs1 = "0.7.5"
+reqwest = { version = "0.12.5", features = ["rustls-tls", "__rustls", "__rustls-ring", "json"] }
+serde = { version = "1.0.204", features = ["derive"] }
+chrono = {version = "0.4.38", features = ["serde"]}
+tera = "1.20.0"
+async-trait = "0.1.81"
+quick-xml = {version = "0.36.1", features = ["tokio", "serialize"] }

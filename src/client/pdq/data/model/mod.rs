@@ -1,0 +1,15 @@
+pub mod name;
+pub mod realm_code;
+pub mod patient;
+pub mod address;
+pub mod patient_person;
+pub mod telecom;
+pub mod administrative_gender_code;
+pub mod registration_event;
+pub mod subject;
+pub mod id;
+pub mod subject_root;
+pub mod birth_time;
+pub mod race_code;
+pub mod relationship;
+pub mod deceased;
