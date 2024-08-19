@@ -8,7 +8,7 @@ use crate::client::pdq::data::dto::endereco::EnderecoDTO;
 use crate::client::pdq::data::dto::raca::Raca;
 use crate::client::pdq::data::dto::sexo::Sexo;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CidadaoDTO {
     pub cnss: Option<Vec<CNSDTO>>,
     pub cpf: Option<String>,

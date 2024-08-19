@@ -1,5 +1,6 @@
-use chrono::{Date, Utc};
+use chrono::{NaiveDate, Utc};
 use tera::Tera;
+
 use crate::client::pdq::data::dto::cidadao::CidadaoDTO;
 use crate::client::pdq::xml::XMLError;
 
@@ -22,7 +23,7 @@ pub struct QueryParameters {
     pub cns: Option<String>,
     pub tenant: Option<String>,
     pub cpf: Option<String>,
-    pub data_nascimento: Option<Date<Utc>>,
+    pub data_nascimento: Option<NaiveDate>,
     pub nome: Option<String>,
     pub nome_mae: Option<String>,
 }

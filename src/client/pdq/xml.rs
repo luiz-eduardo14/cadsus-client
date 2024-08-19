@@ -1,4 +1,3 @@
-use chrono::Utc;
 use quick_xml::events::Event;
 
 use crate::client::pdq::data::dto::cidadao::CidadaoDTO;
@@ -14,7 +13,6 @@ impl CidadaoDTO {
     /// Converts a XML reader into a vector of citizens
     pub fn vec_from_xml(mut reader: quick_xml::Reader<&[u8]>) -> Result<Vec<CidadaoDTO>, XMLError> {
         let mut citizens: Vec<CidadaoDTO> = Vec::new();
-        let now = Utc::now();
         loop {
             match reader.read_event() {
                 Ok(Event::Start(ref e)) => {

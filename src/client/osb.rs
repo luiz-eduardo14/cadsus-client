@@ -6,7 +6,7 @@ use crate::client::osb::OsbTokenError::{InvalidPem, UnknownError};
 
 const TOKEN_ENDPOINT: &str = "https://ehr-auth.saude.gov.br/api/osb/token";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OsbTokenResponse {
     pub access_token: String,
     pub scope: String,
@@ -14,7 +14,7 @@ pub struct OsbTokenResponse {
     pub expires_in: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum OsbTokenError {
     InvalidPem(String),
     TlsError(String),
