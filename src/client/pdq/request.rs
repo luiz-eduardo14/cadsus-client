@@ -45,7 +45,7 @@ impl Client {
     const PDQ_URL: &'static str = "https://servicos.saude.gov.br/cadsus/v2/PDQSupplierJWT";
 
     fn get_context_from_query_parameters(
-        parameters: QueryParameters,
+        parameters: &QueryParameters,
     ) -> tera::Context {
         let mut context = tera::Context::new();
         context.insert("cns", &parameters.cns);
@@ -61,7 +61,7 @@ impl Client {
     }
 
     pub async fn query_with_obs_token(
-        parameters: QueryParameters,
+        parameters: &QueryParameters,
         obs_token: String,
     ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
         let mut tera = Tera::default();
