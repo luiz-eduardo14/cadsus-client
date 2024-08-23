@@ -5,6 +5,7 @@ use crate::client::pdq::data::dto::certidao::CertidaoDTO;
 use crate::client::pdq::data::dto::cns::CNSDTO;
 use crate::client::pdq::data::dto::contato::ContatoDTO;
 use crate::client::pdq::data::dto::endereco::EnderecoDTO;
+use crate::client::pdq::data::dto::nacionalidade::Nacionalidade;
 use crate::client::pdq::data::dto::raca::Raca;
 use crate::client::pdq::data::dto::sexo::Sexo;
 
@@ -24,6 +25,8 @@ pub struct CidadaoDTO {
     pub raca_cor: Option<Raca>,
     pub sexo: Sexo,
     pub vivo: bool,
+    pub ibge_nascimento: Option<String>,
+    pub nacionalidade: Option<Nacionalidade>
 }
 
 impl Default for CidadaoDTO {
@@ -43,6 +46,8 @@ impl Default for CidadaoDTO {
             raca_cor: None,
             sexo: Sexo::Ignorado,
             vivo: false,
+            ibge_nascimento: None,
+            nacionalidade: None
         }
     }
 }

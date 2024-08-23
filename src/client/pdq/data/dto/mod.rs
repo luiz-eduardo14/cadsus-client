@@ -6,3 +6,4 @@ pub mod cns;
 pub mod raca;
 pub mod endereco;
 pub mod sexo;
+pub mod nacionalidade;

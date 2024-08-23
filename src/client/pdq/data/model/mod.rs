@@ -13,3 +13,4 @@ pub mod birth_time;
 pub mod race_code;
 pub mod relationship;
 pub mod deceased;
+pub mod birthPlace;

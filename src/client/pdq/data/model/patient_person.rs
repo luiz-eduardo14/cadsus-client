@@ -3,11 +3,13 @@ use serde::{Deserialize, Serialize};
 use crate::client::pdq::data::dto::cidadao::CidadaoDTO;
 use crate::client::pdq::data::dto::cns::CNSDTO;
 use crate::client::pdq::data::dto::contato::{ContatoDTO, ContatoTipo};
+use crate::client::pdq::data::dto::nacionalidade::Nacionalidade;
 use crate::client::pdq::data::dto::raca::Raca;
 use crate::client::pdq::data::dto::sexo::Sexo;
 use crate::client::pdq::data::model::address::Address;
 use crate::client::pdq::data::model::administrative_gender_code::AdministrativeGenderCode;
 use crate::client::pdq::data::model::birth_time::BirthTime;
+use crate::client::pdq::data::model::birthPlace::BirthPlace;
 use crate::client::pdq::data::model::deceased::Deceased;
 use crate::client::pdq::data::model::id::{IdRoot, IdRootType};
 use crate::client::pdq::data::model::name::Name;
@@ -37,6 +39,8 @@ pub struct PatientPerson {
     pub deceased: Option<Deceased>,
     #[serde(rename = "deceasedTime")]
     pub deceased_time: Option<Deceased>,
+    #[serde(rename = "birthPlace")]
+    pub birth_place: Option<BirthPlace>,
 }
 
 impl PatientPerson {
@@ -130,6 +134,18 @@ impl PatientPerson {
                 _ => Sexo::Ignorado,
             }
         ).unwrap_or(Sexo::Ignorado);
+        if let Some(birth_place) = self.birth_place.as_ref() {
+            citizen.ibge_nascimento = birth_place.addr.as_ref()
+                .and_then(|addr| addr.city.as_ref())
+                .map(|c| c.value.clone());
+            citizen.nacionalidade = birth_place.addr.as_ref().map(|c| {
+                const BRASIL_CODE: &str = "10";
+                if c.country.value == BRASIL_CODE {
+                    return Nacionalidade::BRASILEIRO;
+                }
+                return Nacionalidade::ESTRANGEIRO;
+            });
+        }
         return citizen;
     }
 }
