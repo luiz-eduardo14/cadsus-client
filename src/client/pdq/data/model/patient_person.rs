@@ -139,7 +139,7 @@ impl PatientPerson {
                 .and_then(|addr| addr.city.as_ref())
                 .map(|c| c.value.clone());
             citizen.nacionalidade = birth_place.addr.as_ref().map(|c| {
-                const BRASIL_CODE: &str = "10";
+                const BRASIL_CODE: &str = "010";
                 if c.country.value == BRASIL_CODE {
                     return Nacionalidade::BRASILEIRO;
                 }
