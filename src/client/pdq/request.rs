@@ -15,6 +15,7 @@ pub enum CadsusRequestError {
     InvalidNome,
     InvalidNomeMae,
     UnspecifiedError(String),
+    Unauthorized,
     FailedToRenderTemplate(String),
     XmlParse(XMLError)
 }
@@ -104,6 +105,11 @@ impl Client {
                         Err(e) => Err(CadsusRequestError::XmlParse(e))
                     }
                 }
+
+                if status == reqwest::StatusCode::UNAUTHORIZED {
+                    return Err(CadsusRequestError::Unauthorized);
+                }
+
                 Err(CadsusRequestError::UnspecifiedError(
                     format!("Unexpected status code: {:?}", status)
                 ))
