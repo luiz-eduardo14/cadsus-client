@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::client::pdq::data::dto::cns::{CNSDTO, Situations};
+use crate::client::pdq::data::dto::cns::{CNSDTO, CNSSituation};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum IdType {
@@ -59,9 +59,9 @@ impl IdRoot {
                     numero: number,
                     situacao: situation.map(|s| {
                         return match s.as_str() {
-                            "D" => Situations::DEFINITIVO,
-                            "P" => Situations::PROVISORIO,
-                            _ => Situations::NONE,
+                            "D" => CNSSituation::DEFINITIVO,
+                            "P" => CNSSituation::PROVISORIO,
+                            _ => CNSSituation::NONE,
                         };
                     }),
                 });
