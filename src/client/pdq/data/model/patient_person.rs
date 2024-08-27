@@ -82,6 +82,10 @@ impl PatientPerson {
         if let Some(deceased) = self.deceased.as_ref() {
             return deceased.value == "true";
         }
+        if self.deceased_time.is_some() {
+            return true;
+        }
+
         return false;
     }
 
