@@ -9,7 +9,7 @@ use crate::client::pdq::data::dto::sexo::Sexo;
 use crate::client::pdq::data::model::address::Address;
 use crate::client::pdq::data::model::administrative_gender_code::AdministrativeGenderCode;
 use crate::client::pdq::data::model::birth_time::BirthTime;
-use crate::client::pdq::data::model::birthPlace::BirthPlace;
+use crate::client::pdq::data::model::birth_place::BirthPlace;
 use crate::client::pdq::data::model::deceased::Deceased;
 use crate::client::pdq::data::model::id::{IdRoot, IdRootType};
 use crate::client::pdq::data::model::name::Name;
