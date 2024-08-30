@@ -1,6 +1,6 @@
 [package]
 name = "cadsus-client"
-version = "0.0.10"
+version = "0.0.11"
 edition = "2021"
 authors = ["luiz-eduardo14"]
 repository = "https://github.com/luiz-eduardo14/cadsus-client"
