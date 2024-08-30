@@ -1,4 +1,6 @@
+use std::os::linux::raw::stat;
 use chrono::{NaiveDate, Utc};
+use reqwest::Proxy;
 use tera::Tera;
 
 use crate::client::pdq::data::dto::cidadao::CidadaoDTO;
@@ -15,9 +17,10 @@ pub enum CadsusRequestError {
     InvalidNome,
     InvalidNomeMae,
     UnspecifiedError(String),
+    InternalServerError(String),
     Unauthorized,
     FailedToRenderTemplate(String),
-    XmlParse(XMLError)
+    XmlParse(XMLError),
 }
 
 pub struct QueryParameters {
@@ -61,58 +64,126 @@ impl Client {
         context
     }
 
-    pub async fn query_with_obs_token(
+    fn generate_soap_cadsus_xml(
         parameters: &QueryParameters,
-        obs_token: String,
-    ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
+    ) -> Result<String, CadsusRequestError> {
         let mut tera = Tera::default();
         tera.add_raw_template("soap_cadsus.xml", include_str!("../../templates/PRPA_IN201305UV02.xml"))
             .unwrap();
         let context = Client::get_context_from_query_parameters(parameters);
-
-        let soap_message = tera.render("soap_cadsus.xml", &context).map_err(|e| {
+        tera.render("soap_cadsus.xml", &context).map_err(|e| {
             CadsusRequestError::FailedToRenderTemplate(e.to_string())
-        })?;
+        })
+    }
 
+    fn mount_cadsus_auth_header(
+        obs_token: String,
+    ) -> reqwest::header::HeaderMap {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("Content-Type", "application/soap+xml".parse().unwrap());
         headers.insert("Authorization", format!("jwt {}", obs_token).parse().unwrap());
+        headers
+    }
 
-        let client = reqwest::Client::builder()
-            .use_rustls_tls()
-            .tls_built_in_root_certs(true)
-            .build().unwrap();
-
-        let request = client.request(
+    async fn fetch_cadsus_request(
+        http_client: &reqwest::Client,
+        headers: reqwest::header::HeaderMap,
+        body: String,
+    ) -> Result<reqwest::Response, CadsusRequestError> {
+        let request = http_client.request(
             reqwest::Method::POST,
             Self::PDQ_URL,
         )
+            .body(body)
             .headers(headers)
-            .body(soap_message.clone())
             .build()
             .map_err(|e| CadsusRequestError::UnspecifiedError(e.to_string()))?;
-        let response = client.execute(request).await;
+        let response = http_client.execute(request).await;
         return match response {
             Ok(response) => {
-                let status = response.status();
-                if status.is_success() {
-                    let body = response.text().await.map_err(|e| {
-                        CadsusRequestError::UnspecifiedError(e.to_string())
-                    })?;
-                    let reader = quick_xml::Reader::from_str(&body);
-                    return match CidadaoDTO::vec_from_xml(reader) {
-                        Ok(vec_cidadao) => Ok(vec_cidadao),
-                        Err(e) => Err(CadsusRequestError::XmlParse(e))
-                    }
-                }
+                Ok(response)
+            }
+            Err(e) => {
+                Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
+            }
+        };
+    }
 
-                if status == reqwest::StatusCode::UNAUTHORIZED {
-                    return Err(CadsusRequestError::Unauthorized);
-                }
+    async fn process_cadsus_response(
+        response: reqwest::Response,
+    ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
+        let status = response.status();
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(CadsusRequestError::Unauthorized);
+        }
+        if status == reqwest::StatusCode::INTERNAL_SERVER_ERROR {
+            if let Ok(body) = response.text().await {
+                return Err(CadsusRequestError::InternalServerError(body));
+            }
+            return Err(CadsusRequestError::InternalServerError("
+                Failed to get response body from server
+            ".to_string()));
+        }
 
-                Err(CadsusRequestError::UnspecifiedError(
-                    format!("Unexpected status code: {:?}", status)
-                ))
+        if status.is_success() {
+            let body = response.text().await.map_err(|e| {
+                CadsusRequestError::UnspecifiedError(e.to_string())
+            })?;
+            let reader = quick_xml::Reader::from_str(&body);
+            return match CidadaoDTO::vec_from_xml(reader) {
+                Ok(vec_cidadao) => Ok(vec_cidadao),
+                Err(e) => Err(CadsusRequestError::XmlParse(e))
+            };
+        }
+
+        Err(CadsusRequestError::UnspecifiedError(
+            format!("Unexpected status code: {:?}", status)
+        ))
+    }
+
+    pub async fn query_with_obs_token_and_proxy(
+        parameters: &QueryParameters,
+        obs_token: String,
+        proxy: Proxy,
+    ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
+        let client = reqwest::Client::builder()
+            .use_rustls_tls()
+            .tls_built_in_root_certs(true)
+            .proxy(proxy)
+            .build()
+            .unwrap();
+
+        let soap_xml = Self::generate_soap_cadsus_xml(parameters)?;
+        let headers = Self::mount_cadsus_auth_header(obs_token);
+
+        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await;
+        return match response {
+            Ok(response) => {
+                Self::process_cadsus_response(response).await
+            }
+            Err(e) => {
+                Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
+            }
+        };
+    }
+
+    pub async fn query_with_obs_token(
+        parameters: &QueryParameters,
+        obs_token: String,
+    ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
+        let client = reqwest::Client::builder()
+            .use_rustls_tls()
+            .tls_built_in_root_certs(true)
+            .build()
+            .unwrap();
+
+        let soap_xml = Self::generate_soap_cadsus_xml(parameters)?;
+        let headers = Self::mount_cadsus_auth_header(obs_token);
+
+        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await;
+        return match response {
+            Ok(response) => {
+                Self::process_cadsus_response(response).await
             }
             Err(e) => {
                 Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
