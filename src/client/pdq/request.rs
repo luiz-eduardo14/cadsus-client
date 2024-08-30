@@ -18,6 +18,7 @@ pub enum CadsusRequestError {
     InvalidNomeMae,
     UnspecifiedError(String),
     InternalServerError(String),
+    Timeout,
     Unauthorized,
     FailedToRenderTemplate(String),
     XmlParse(XMLError),
@@ -104,6 +105,10 @@ impl Client {
                 Ok(response)
             }
             Err(e) => {
+                if e.is_timeout() {
+                    return Err(CadsusRequestError::Timeout);
+                }
+
                 Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
             }
         };
@@ -156,15 +161,9 @@ impl Client {
         let soap_xml = Self::generate_soap_cadsus_xml(parameters)?;
         let headers = Self::mount_cadsus_auth_header(obs_token);
 
-        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await;
-        return match response {
-            Ok(response) => {
-                Self::process_cadsus_response(response).await
-            }
-            Err(e) => {
-                Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
-            }
-        };
+        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await?;
+        let citizen =  Self::process_cadsus_response(response).await?;
+        Ok(citizen)
     }
 
     pub async fn query_with_obs_token(
@@ -180,14 +179,8 @@ impl Client {
         let soap_xml = Self::generate_soap_cadsus_xml(parameters)?;
         let headers = Self::mount_cadsus_auth_header(obs_token);
 
-        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await;
-        return match response {
-            Ok(response) => {
-                Self::process_cadsus_response(response).await
-            }
-            Err(e) => {
-                Err(CadsusRequestError::UnspecifiedError(format!("Failed to execute request: {:?}", e)))
-            }
-        };
+        let response = Self::fetch_cadsus_request(&client, headers, soap_xml).await?;
+        let citizen =  Self::process_cadsus_response(response).await?;
+        return Ok(citizen);
     }
 }
