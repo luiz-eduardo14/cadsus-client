@@ -1,6 +1,6 @@
-use std::os::linux::raw::stat;
 use chrono::{NaiveDate, Utc};
 use reqwest::Proxy;
+use serde::{Deserialize, Serialize};
 use tera::Tera;
 
 use crate::client::pdq::data::dto::cidadao::CidadaoDTO;
@@ -24,6 +24,7 @@ pub enum CadsusRequestError {
     XmlParse(XMLError),
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct QueryParameters {
     pub cns: Option<String>,
     pub tenant: Option<String>,
