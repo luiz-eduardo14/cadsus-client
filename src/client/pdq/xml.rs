@@ -23,10 +23,20 @@ impl CidadaoDTO {
                             Ok(content) => {
                                 let content = format!("<subject>{}</subject>", content);
                                 let subject: Result<SubjectRoot, quick_xml::DeError> = quick_xml::de::from_str(&content);
-                                if let Ok(subject) = subject {
-                                    let result_citizen = subject.to_citizen_dto();
-                                    if let Ok(citizen) = result_citizen {
-                                        citizens.push(citizen);
+                                match subject {
+                                    Ok(subject) => {
+                                        let result_citizen = subject.to_citizen_dto();
+                                        match result_citizen {
+                                            Ok(citizen) => {
+                                                citizens.push(citizen);
+                                            }
+                                            Err(e) => {
+                                                return Err(e);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        return Err(XMLError::ConvertError(e.to_string()));
                                     }
                                 }
                             }

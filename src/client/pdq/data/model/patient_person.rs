@@ -22,7 +22,7 @@ pub struct PatientPerson {
     #[serde(rename = "name")]
     pub names: Vec<Name>,
     #[serde(rename = "telecom")]
-    pub telecoms: Vec<Telecom>,
+    pub telecoms: Option<Vec<Telecom>>,
     #[serde(rename = "administrativeGenderCode")]
     pub administrative_gender_code: AdministrativeGenderCode,
     #[serde(rename = "birthTime")]
@@ -98,7 +98,11 @@ impl PatientPerson {
     }
 
     fn get_contatos(&self) -> Vec<ContatoDTO> {
-        return self.telecoms.iter().map(|t| {
+        if self.telecoms.is_none() {
+            return Vec::new();
+        }
+        let telecoms = self.telecoms.as_ref().unwrap();
+        return telecoms.iter().map(|t| {
             let contact_type = ContatoTipo::from_str(t.use_.as_ref().unwrap().as_str());
             return ContatoDTO {
                 value: t.value.clone(),

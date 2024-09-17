@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, Utc};
+use log::info;
 use reqwest::Proxy;
 use serde::{Deserialize, Serialize};
 use tera::Tera;
@@ -119,6 +120,7 @@ impl Client {
         response: reqwest::Response,
     ) -> Result<Vec<CidadaoDTO>, CadsusRequestError> {
         let status = response.status();
+        info!("status: {:?}", status);
         if status == reqwest::StatusCode::UNAUTHORIZED {
             return Err(CadsusRequestError::Unauthorized);
         }
