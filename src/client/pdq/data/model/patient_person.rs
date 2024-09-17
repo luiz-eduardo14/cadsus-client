@@ -20,21 +20,21 @@ use crate::client::pdq::data::model::telecom::Telecom;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PatientPerson {
     #[serde(rename = "name")]
-    pub names: Vec<Name>,
+    pub names: Option<Vec<Name>>,
     #[serde(rename = "telecom")]
     pub telecoms: Option<Vec<Telecom>>,
     #[serde(rename = "administrativeGenderCode")]
-    pub administrative_gender_code: AdministrativeGenderCode,
+    pub administrative_gender_code: Option<AdministrativeGenderCode>,
     #[serde(rename = "birthTime")]
-    pub birth_time: BirthTime,
+    pub birth_time: Option<BirthTime>,
     #[serde(rename = "addr")]
-    pub addresses: Vec<Address>,
+    pub addresses: Option<Vec<Address>>,
     #[serde(rename = "raceCode")]
-    pub race_code: RaceCode,
+    pub race_code: Option<RaceCode>,
     #[serde(rename = "asOtherIDs")]
-    pub other_ids: Vec<IdRoot>,
+    pub other_ids: Option<Vec<IdRoot>>,
     #[serde(rename = "personalRelationship")]
-    pub relationships: Vec<Relationship>,
+    pub relationships: Option<Vec<Relationship>>,
     #[serde(rename = "deceasedInd")]
     pub deceased: Option<Deceased>,
     #[serde(rename = "deceasedTime")]
@@ -47,35 +47,40 @@ impl PatientPerson {
     fn get_cns_and_cpf(&self) -> (Option<Vec<CNSDTO>>, Option<String>) {
         let mut cnss: Option<Vec<CNSDTO>> = None;
         let mut cpf: Option<String> = None;
-        for id_root in self.other_ids.iter().map(|id_root| id_root.get_type()) {
-            match id_root {
-                IdRootType::CNS(cns) => {
-                    if cnss.is_none() {
-                        cnss = Some(vec![cns]);
-                    } else {
-                        cnss.as_mut().unwrap().push(cns);
+        if let Some(other_ids) = &self.other_ids {
+            for id_root in other_ids.iter().map(|id_root| id_root.get_type()) {
+                match id_root {
+                    IdRootType::CNS(cns) => {
+                        if cnss.is_none() {
+                            cnss = Some(vec![cns]);
+                        } else {
+                            cnss.as_mut().unwrap().push(cns);
+                        }
                     }
+                    IdRootType::CPF(cpf_value) => {
+                        cpf = Some(cpf_value);
+                    }
+                    IdRootType::NotFound => {}
                 }
-                IdRootType::CPF(cpf_value) => {
-                    cpf = Some(cpf_value);
-                }
-                IdRootType::NotFound => {}
             }
         }
         return (cnss, cpf);
     }
 
     fn get_raca_cor(&self) -> Option<Raca> {
-        return self.race_code.code.clone().map(|c| {
-            return match c.as_str() {
-                "01" => Raca::BRANCA,
-                "02" => Raca::PRETA,
-                "03" => Raca::PARDA,
-                "04" => Raca::AMARELA,
-                "05" => Raca::INDIGENA,
-                _ => Raca::SEMINFORMACAO,
-            };
-        });
+        if let Some(race_code) = &self.race_code {
+            return race_code.code.clone().map(|c| {
+                return match c.as_str() {
+                    "01" => Raca::BRANCA,
+                    "02" => Raca::PRETA,
+                    "03" => Raca::PARDA,
+                    "04" => Raca::AMARELA,
+                    "05" => Raca::INDIGENA,
+                    _ => Raca::SEMINFORMACAO,
+                };
+            });
+        }
+        return None;
     }
 
     fn is_deceased(&self) -> bool {
@@ -113,35 +118,44 @@ impl PatientPerson {
 
     pub(crate) fn to_dto(&self) -> CidadaoDTO {
         let mut citizen = CidadaoDTO::default();
-        let names = self.names.clone();
         let (cnss, cpf) = self.get_cns_and_cpf();
         citizen.cnss = cnss;
         citizen.cpf = cpf;
         citizen.contatos = self.get_contatos();
-        citizen.nome_completo = names.iter().find(|n| n.is_complete_name()).map(|n| n.to_string());
-        citizen.nome_social = names.iter().find(|n| n.is_social_name()).map(|n| n.to_string());
-        citizen.data_nascimento = self.birth_time.value.clone().map(|v| {
-            return NaiveDate::parse_from_str(v.as_str(), "%Y%m%d%H%M%S").unwrap();
-        });
+        if let Some(names) = self.names.clone() {
+            citizen.nome_completo = names.iter().find(|n| n.is_complete_name()).map(|n| n.to_string());
+            citizen.nome_social = names.iter().find(|n| n.is_social_name()).map(|n| n.to_string());
+        }
+        if let Some(birth_time) = &self.birth_time {
+            citizen.data_nascimento = birth_time.value.clone().map(|v| {
+                return NaiveDate::parse_from_str(v.as_str(), "%Y%m%d%H%M%S").unwrap();
+            });
+        }
         citizen.raca_cor = self.get_raca_cor();
-        for relationship in self.relationships.iter() {
-            let (relationship_type, name) = relationship.get_value();
-            match relationship_type {
-                RelationshipType::Mother => citizen.nome_mae = Some(name),
-                RelationshipType::Father => citizen.nome_pai = Some(name),
-                _ => {}
+        if let Some(relationships) = &self.relationships {
+            for relationship in relationships {
+                let (relationship_type, name) = relationship.get_value();
+                match relationship_type {
+                    RelationshipType::Mother => citizen.nome_mae = Some(name),
+                    RelationshipType::Father => citizen.nome_pai = Some(name),
+                    _ => {}
+                }
             }
         }
         citizen.vivo = !self.is_deceased();
         citizen.data_obito = self.get_deceased_date();
-        citizen.enderecos = self.addresses.iter().filter_map(|a| a.to_dto()).collect();
-        citizen.sexo = self.administrative_gender_code.code.clone().map(
-            |c| match c.as_str() {
-                "M" => Sexo::Masculino,
-                "F" => Sexo::Feminino,
-                _ => Sexo::Ignorado,
-            }
-        ).unwrap_or(Sexo::Ignorado);
+        if let Some(addresses) = &self.addresses {
+            citizen.enderecos = addresses.iter().filter_map(|a| a.to_dto()).collect();
+        }
+        if let Some(administrative_gender_code) = &self.administrative_gender_code {
+            citizen.sexo = administrative_gender_code.code.clone().map(
+                |c| match c.as_str() {
+                    "M" => Sexo::Masculino,
+                    "F" => Sexo::Feminino,
+                    _ => Sexo::Ignorado,
+                }
+            ).unwrap_or(Sexo::Ignorado);
+        }
         if let Some(birth_place) = self.birth_place.as_ref() {
             citizen.ibge_nascimento = birth_place.addr.as_ref()
                 .and_then(|addr| addr.city.as_ref())
