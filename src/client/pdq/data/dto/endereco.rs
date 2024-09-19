@@ -16,5 +16,5 @@ pub struct EnderecoDTO {
     pub numero_casa: Option<String>,
     pub nome_rua: Option<String>,
     pub codigo_tipo_rua: Option<String>,
-    pub codigo_pais: String,
+    pub codigo_pais: Option<String>,
 }

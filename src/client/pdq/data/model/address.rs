@@ -52,7 +52,7 @@ pub struct Address {
     #[serde(rename = "postalCode")]
     pub postal_code: Option<PostalCode>,
     #[serde(rename = "country")]
-    pub country: Country,
+    pub country: Option<Country>,
     #[serde(rename = "houseNumber")]
     pub house_number: Option<HouseNumber>,
     #[serde(rename = "streetName")]
@@ -67,7 +67,7 @@ impl Address {
     pub fn to_dto(&self) -> Option<EnderecoDTO> {
         let city = self.city.as_ref().map(|c| c.value.clone());
         let postal_code = self.postal_code.as_ref().map(|p| p.value.clone());
-        let country = self.country.value.clone();
+        let country = self.country.as_ref().map(|country| country.value.clone());
         let house_number = self.house_number.as_ref().map(|h| h.value.clone());
         let street_name = self.street_name.as_ref().map(|s| s.value.clone());
         let street_name_type = self.street_name_type.as_ref().map(|s| s.value.clone());
