@@ -25,7 +25,7 @@ pub enum CadsusRequestError {
     XmlParse(XMLError),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct QueryParameters {
     pub cns: Option<String>,
     pub tenant: Option<String>,
